@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+{% if messages %}
+    {% for message in messages %}
+    <h1 style="background-color: red">{{ message }}</h1>
+ 	{% endfor %}
+{% endif %}
+<div style="vertical-align: top; width: 400px; display: inline-block; border: 1px solid black;font-size: 20px; margin: 10px;padding: 10px;">
+	<h1>Register</h1>
+	<form action="/register" method="post">
+	{% csrf_token %}
+		First Name:<input type="text" name="f_n"><br>
+		Last Name:<input type="text" name="l_n"><br>
+		Email<input type="text" name="eml"><br>
+		Password<input type="text" name="pw"><br>
+		Confirm Password<input type="text" name="c_pw"><br>
+		<input type="submit" value="Regiter">
+	</form>
+</div>
+<div style="width: 400px; display: inline-block; border: 1px solid black;font-size: 20px;margin: 10px;padding: 10px;">
+	<h1>Log In</h1>
+	<form action="/login" method="post">
+	{% csrf_token %}
+		Email<input type="text" name="eml"><br>
+		Password<input type="text" name="pw"><br>
+		<input type="submit" value="Log In">
+	</form>
+</div>
+</body>
+</html>
