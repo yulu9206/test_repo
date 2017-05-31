@@ -1,21 +1,18 @@
 from __future__ import unicode_literals
 from django.db import models
-import re
 import bcrypt
-EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
-NAME_REGEX =re.compile('^[A-z]+$')
 
 class UserManager(models.Manager):
   def login(self, postData):
     errors = []
-    if User.objects.filter(eml=postData['eml']):
-        db_pw = User.objects.get(eml=postData['eml']).pw.encode()
+    if User.objects.filter(username=postData['username']):
+        db_pw = User.objects.get(username=postData['username']).pw.encode()
         form_pw = postData['pw'].encode('utf8')
         if not bcrypt.checkpw(form_pw, db_pw):
             errors.append('Password is incorret!')
             return [False, errors]
         else:
-            user = User.objects.get(eml=postData['eml'])
+            user = User.objects.get(username=postData['username'])
             return [True, user] 
     else:
         errors.append('User does not exist!')
@@ -23,27 +20,49 @@ class UserManager(models.Manager):
 
   def register(self, postData):
     errors = []
-    if len(postData['f_n']) == 0:
-        errors.append('First name cannot be empty!')
-    if len(postData['l_n']) == 0:
-        errors.append('Last name cannot be empty!')
-    if not EMAIL_REGEX.match(postData['eml']):
-        errors.append('Email address is invalid!')
+    if len(postData['name']) < 3 :
+        errors.append('Name should be at least three characters long!')
+    if len(postData['username']) < 3:
+        errors.append('Userame should be at least three characters long!')
     if len(postData['pw']) < 8:
-        errors.append('Passord is too short!')
-    if User.objects.filter(eml=postData['eml']).first() != None:
-        errors.append('Email address is already registered!')
+        errors.append('Passord should be at least 8 characters long!')
+    if User.objects.filter(username=postData['username']).first() != None:
+        errors.append('Username is already registered!')
     if errors != []:
         return [False, errors]
     else:
-        user = User.objects.create(f_n=postData['f_n'], l_n=postData['l_n'], eml=postData['eml'], pw=bcrypt.hashpw(postData['pw'].encode('utf8'), bcrypt.gensalt()))
+        user = User.objects.create(name=postData['name'], username=postData['username'], h_date=postData['h_date'], pw=bcrypt.hashpw(postData['pw'].encode('utf8'), bcrypt.gensalt()))
         return [True, user] 
 
+class ItemManager(models.Manager):
+  def validate(self, postData, user_id):
+    errors = []
+    if len(postData['name']) < 1:
+      errors.append('Item can not be empty!')
+      return [False, errors]
+    if len(postData['name']) < 3:
+      errors.append('Item name should be more than three charaters long!')
+      return [False, errors]
+    this_user = User.objects.filter(id=user_id).first()
+    new_item = Item.objects.create(name=postData['name'], author=this_user)
+    new_item.wished_users.add(this_user)
+    return [True, errors]
+
 class User(models.Model):
-  f_n = models.CharField(max_length=38)
-  l_n = models.CharField(max_length=38)
-  eml = models.CharField(max_length=38)
+  name = models.CharField(max_length=38)
+  username = models.CharField(max_length=38)
   pw = models.CharField(max_length=38)
+  h_date = models.DateTimeField(auto_now=True)
   created_at = models.DateTimeField(auto_now_add=True)
   updated_at = models.DateTimeField(auto_now=True)
   objects = UserManager()
+  
+
+class Item(models.Model):
+  name = models.CharField(max_length=38)
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
+  objects = ItemManager()
+  author = models.ForeignKey(User, related_name="created_items")
+  wished_users = models.ManyToManyField(User, related_name="wished_items")
+
